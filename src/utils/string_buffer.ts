@@ -90,4 +90,16 @@ export class StringBuffer{
     reset():void {
         this.cursor = 0;
     }
+
+    resize(new_size: number): void {
+        if (new_size <= this.buffer.length) return;
+
+        console.log(`Resizing StringBuffer from ${this.buffer.length} to ${new_size} bytes...`);
+        
+        const new_buffer = new Uint8Array(new_size);
+        
+        new_buffer.set(this.buffer);
+        
+        this.buffer = new_buffer;
+    }
 }

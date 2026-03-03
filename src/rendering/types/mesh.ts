@@ -55,6 +55,17 @@ export class Mesh{
             this.normals[i+2] = world_n[2];
         }
     }
+    rebind_buffers(
+        raster_color: ArrayType, 
+        raster_buffer: ArrayType, 
+        projected_buffer: ArrayType, 
+        color_buffer: ArrayType
+    ) {
+        this.raster_color = raster_color;
+        this.raster_buffer = raster_buffer;
+        this.projected_buffer = projected_buffer;
+        this.color_buffer = color_buffer;
+    }
 }
 
 

@@ -4,7 +4,6 @@ import type { Light } from "./light";
 import { Mesh } from "./mesh";
 
 
-const HUGE = 1024*1024 * 10;
 
 export class Scene{
     projected_buffer!:ArrayType;
@@ -83,10 +82,6 @@ export class Scene{
         const color_view = this.color_buffer.subarray(this.color_cursor,this.color_cursor + color_size);
         const raster_color = this.raster_color.subarray(this.raster_color_cursor,this.raster_color_cursor + raster_color_size);
 
-        console.log(`Cursors: ${[this.scene_cursor,this.projected_cursor,this.color_cursor,this.raster_color_cursor]}`);
-        console.log(`Scene_size for mesh: ${scene_size}, proj = ${proj_size}, color_size = ${color_size}, raster_color_size = ${raster_color_size}`)
-        console.log(`Full sizes: ${[this.scene_buffer.length,this.projected_buffer.length,this.color_buffer.length,this.raster_color.length]}`)
-
         this.scene_cursor += scene_size;
         this.projected_cursor += proj_size;
         this.color_cursor += color_size;
@@ -98,6 +93,50 @@ export class Scene{
     }
     add_light(light:Light){
         this.lights.push(light);
+    }
+
+    resize_buffers(new_triangle_capacity: number) {
+        const old_scene = this.scene_buffer;
+        const old_proj = this.projected_buffer;
+        const old_color = this.color_buffer;
+        const old_raster_color = this.raster_color;
+        const old_draw_order = this.draw_order;
+
+        this.scene_buffer = new ArrayType(new_triangle_capacity * 12);
+        this.projected_buffer = new ArrayType(new_triangle_capacity * 12);
+        this.color_buffer = new ArrayType(new_triangle_capacity * 9);
+        this.raster_color = new ArrayType(new_triangle_capacity * 9);
+        this.draw_order = new IndexingType(new_triangle_capacity);
+
+        this.scene_buffer.set(old_scene);
+        this.projected_buffer.set(old_proj);
+        this.color_buffer.set(old_color);
+        this.raster_color.set(old_raster_color);
+        this.draw_order.set(old_draw_order);
+
+        let temp_scene_cursor = 0;
+        let temp_proj_cursor = 0;
+        let temp_color_cursor = 0;
+        let temp_raster_color_cursor = 0;
+
+        for (const mesh of this.meshes) {
+            const scene_size = mesh.indices.length * 4;
+            const proj_size = (mesh.vertices.length / 3) * 4;
+            const color_size = mesh.vertices.length;
+            const raster_color_size = mesh.indices.length * 3;
+
+            const new_scene_view = this.scene_buffer.subarray(temp_scene_cursor, temp_scene_cursor + scene_size);
+            const new_proj_view = this.projected_buffer.subarray(temp_proj_cursor, temp_proj_cursor + proj_size);
+            const new_color_view = this.color_buffer.subarray(temp_color_cursor, temp_color_cursor + color_size);
+            const new_raster_color_view = this.raster_color.subarray(temp_raster_color_cursor, temp_raster_color_cursor + raster_color_size);
+
+            mesh.rebind_buffers(new_raster_color_view, new_scene_view, new_proj_view, new_color_view);
+
+            temp_scene_cursor += scene_size;
+            temp_proj_cursor += proj_size;
+            temp_color_cursor += color_size;
+            temp_raster_color_cursor += raster_color_size;
+        }
     }
 
 
