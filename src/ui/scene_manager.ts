@@ -13,6 +13,8 @@ import { Viewport } from "./viewport";
 import { Inspector } from "./inspector";
 import { initialize_toolbar } from "./toolbar";
 import { Node } from "../rendering/types/node";
+import type { EditorMode } from "./state_manager";
+import { EditorState } from "./state_manager";
 
 export class SceneManager {
     public scene: Scene;
@@ -20,6 +22,7 @@ export class SceneManager {
     
     private viewport: Viewport;
     private inspector: Inspector;
+    private editor_state:EditorState
     
     private target_element: HTMLElement;
     private wireframe_checkbox: HTMLInputElement;
@@ -28,6 +31,11 @@ export class SceneManager {
     
     private animation_id: number | null = null;
     public selected_node: Node | null = null;
+
+    private last_mx:number = 0;
+    private last_my:number = 0;
+
+    private is_dragging = false;
 
     public current_triangles: number = 0;
     public current_capacity: number = 50000;
@@ -53,6 +61,7 @@ export class SceneManager {
         
         this.viewport = new Viewport(svg_container_id);
         this.inspector = new Inspector(inspector_id);
+        this.editor_state = new EditorState(this.inspector,this.scene);
 
         this.setup_lights();
         this.update_stats_ui();
@@ -124,7 +133,7 @@ export class SceneManager {
 
     public select_node(node: Node) {
         this.selected_node = node;
-        this.inspector.inspect(this.selected_node);
+        this.editor_state.select(this.selected_node);
     }
 
     public start() {
@@ -137,10 +146,19 @@ export class SceneManager {
     private loop = () => {
         const camera_pos = this.viewport.camera_pos;
         const view = this.viewport.get_view_matrix();
-        const projection = perspective(60 * Math.PI / 180, 400 / 300, 0.1, 100);
+        const projection = this.viewport.get_projection();
         const vp = mul_mat4(projection, view);
 
-        const models = this.nodes.map(n => n.model);
+        this.editor_state.update_gizmo_transforms();
+
+        const all_nodes = [
+           this.editor_state.gizmo_z,
+           this.editor_state.gizmo_y,
+           this.editor_state.gizmo_x,
+            ...this.nodes
+        ]
+
+        const models = all_nodes.map(n => n.model);
         const mvps = models.map(m => mul_mat4(vp, m));
 
         for (let i = 0; i < this.scene.meshes.length; ++i) {
@@ -160,6 +178,8 @@ export class SceneManager {
         this.target_element.addEventListener("mousedown", (e: MouseEvent) => {
             if (e.button !== 0) return;
 
+            this.is_dragging = true;
+
             const rect = this.target_element.getBoundingClientRect();
             const mouse_x = e.clientX - rect.left;
             const mouse_y = e.clientY - rect.top;
@@ -168,7 +188,7 @@ export class SceneManager {
             const y_ndc = 1.0 - (2.0 * mouse_y) / rect.height; 
 
             const view = this.viewport.get_view_matrix();
-            const projection = perspective(60 * Math.PI / 180, 400 / 300, 0.1, 100);
+            const projection = this.viewport.get_view_matrix();
             const vp = mul_mat4(projection, view);
             const inv_vp = inverse_mat4(vp);
 
@@ -202,12 +222,27 @@ export class SceneManager {
                 directional_vector: direction
             };
 
-            for (const node of this.nodes) {
-                if (node.intersects_with(ray)) {
-                    this.select_node(node);
-                    break;
-                }
+            this.editor_state.handle_mouse_down(ray, e.clientX, e.clientY, this.nodes);
+            this.selected_node = this.editor_state.selected_node;
+        });
+        window.addEventListener("mousemove", (e: MouseEvent) => {
+            if (!this.is_dragging) return;
+            
+            const dx = e.clientX - this.last_mx;
+            const dy = e.clientY - this.last_my;
+            
+            this.last_mx = e.clientX;
+            this.last_my = e.clientY;
+
+            if (this.editor_state.mode !== "IDLE") {
+                this.editor_state.handle_mouse_move(e.clientX, e.clientY);
+            } else {
+                this.viewport.orbit(dx, dy);
             }
+        });
+        window.addEventListener("mouseup", () => {
+            this.is_dragging = false; 
+            this.editor_state.handle_mouse_up();
         });
     }
 }

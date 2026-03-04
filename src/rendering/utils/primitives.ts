@@ -289,8 +289,8 @@ export function merge_geometries(geo1:Geometry, geo2:Geometry) : Geometry{
     const n_i2 = geo2.indices.length;
 
     const new_indices = new IndexingType(n_i1 + n_i2);
-    new_vertices.set(geo1.indices);
-    new_vertices.set(geo2.vertices,n_i1);
+    new_indices.set(geo1.indices);
+    new_indices.set(geo2.vertices,n_i1);
 
     const offset = n1 / 3;
     for(let i = 0; i < n_i2; ++i){

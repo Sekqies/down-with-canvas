@@ -1,5 +1,5 @@
 import { mat4, vec3 } from "../math/types";
-import { look_at } from "../math/transformations";
+import { look_at, perspective } from "../math/transformations";
 
 export class Viewport {
     public camera_pos: vec3 = vec3(0, 0, 0);
@@ -9,10 +9,16 @@ export class Viewport {
     public theta: number = Math.PI / 4;
     public phi: number = Math.PI / 6;  
 
+    public projection:mat4 = perspective(60 * Math.PI / 180, 400 / 300, 0.1, 100);
+
+    private last_mouse_x = 0;
+    private last_mouse_y = 0;
+    private is_dragging = false;
+
+    private changed_projection = false;
+
     private container: HTMLElement;
-    private is_dragging: boolean = false;
-    private last_mouse_x: number = 0;
-    private last_mouse_y: number = 0;
+    
 
     constructor(container_id: string) {
         const el = document.getElementById(container_id);
@@ -37,6 +43,31 @@ export class Viewport {
         return look_at(this.camera_pos, this.target, vec3(0, 1, 0));
     }
 
+    public get_dimensions() : {width:number, height:number}{
+        this.changed_projection = true;
+        return {
+            width: this.container.clientWidth || 400,
+            height:this.container.clientHeight || 300
+        }
+    }
+
+    public get_projection() : mat4 {
+        if(this.changed_projection){
+            const {width, height} = this.get_dimensions();
+            const ratio = width / height;
+            this.projection = perspective(60 * Math.PI / 180, ratio, 0.1,100);
+            this.changed_projection = false;
+        }   
+        return this.projection;
+    }
+
+    public orbit(delta_x: number, delta_y: number) {
+        const rotation_speed = 0.01;
+        this.theta -= delta_x * rotation_speed;
+        this.phi += delta_y * rotation_speed;
+        this.update_camera_position();
+    }
+
     private attach_event_listeners() {
         this.container.addEventListener("mousedown", (e: MouseEvent) => {
             this.is_dragging = true;
@@ -48,24 +79,6 @@ export class Viewport {
         window.addEventListener("mouseup", () => {
             this.is_dragging = false;
             this.container.style.cursor = "default";
-        });
-
-        window.addEventListener("mousemove", (e: MouseEvent) => {
-            if (!this.is_dragging) return;
-
-            const delta_x = e.clientX - this.last_mouse_x;
-            const delta_y = e.clientY - this.last_mouse_y;
-
-            this.last_mouse_x = e.clientX;
-            this.last_mouse_y = e.clientY;
-
-            const rotation_speed = 0.01;
-
-            if (e.buttons === 1) { 
-                this.theta -= delta_x * rotation_speed;
-                this.phi += delta_y * rotation_speed;
-                this.update_camera_position();
-            }
         });
 
         this.container.addEventListener("wheel", (e: WheelEvent) => {

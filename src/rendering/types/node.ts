@@ -37,6 +37,10 @@ export class Node {
 
 
     intersects_with(line:Line){
+        if(!this.inverse_model) return false;
+        
+
+
         const local_origin = mul_mat4_vec4(this.inverse_model,vec4(line.point[0],line.point[1],line.point[2],1.0));
         const local_dir = mul_mat4_vec4(this.inverse_model,vec4(line.directional_vector[0],line.directional_vector[1],line.directional_vector[2],0.0));
 

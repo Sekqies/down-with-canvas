@@ -108,12 +108,12 @@ export class Inspector {
             let dirty = false;
             
             switch(e.key.toLowerCase()) {
-                case 'w': this.current_node.position[2] -= this.move_speed; dirty = true; break; // Forward
-                case 's': this.current_node.position[2] += this.move_speed; dirty = true; break; // Backward
-                case 'a': this.current_node.position[0] -= this.move_speed; dirty = true; break; // Left
-                case 'd': this.current_node.position[0] += this.move_speed; dirty = true; break; // Right
-                case 'q': this.current_node.position[1] += this.move_speed; dirty = true; break; // Up
-                case 'e': this.current_node.position[1] -= this.move_speed; dirty = true; break; // Down
+                case 'w': this.current_node.position[2] -= this.move_speed; dirty = true; break; 
+                case 's': this.current_node.position[2] += this.move_speed; dirty = true; break;
+                case 'a': this.current_node.position[0] -= this.move_speed; dirty = true; break;
+                case 'd': this.current_node.position[0] += this.move_speed; dirty = true; break;
+                case 'q': this.current_node.position[1] += this.move_speed; dirty = true; break;
+                case 'e': this.current_node.position[1] -= this.move_speed; dirty = true; break;
             }
 
             if (dirty) {
