@@ -140,5 +140,67 @@ export class Scene{
         }
     }
 
+    remove_mesh(target_mesh: Mesh) {
+        const index = this.meshes.indexOf(target_mesh);
+        if (index === -1) return;
+        let temp_scene_cursor = 0;
+        let temp_proj_cursor = 0;
+        let temp_color_cursor = 0;
+        let temp_raster_color_cursor = 0;
+
+        for (let i = 0; i < index; i++) {
+            const m = this.meshes[i];
+            temp_scene_cursor += m.indices.length * 4;
+            temp_proj_cursor += (m.vertices.length / 3) * 4;
+            temp_color_cursor += m.vertices.length;
+            temp_raster_color_cursor += m.indices.length * 3;
+        }
+
+        const scene_size = target_mesh.indices.length * 4;
+        const proj_size = (target_mesh.vertices.length / 3) * 4;
+        const color_size = target_mesh.vertices.length;
+        const raster_color_size = target_mesh.indices.length * 3;
+
+        this.scene_buffer.set(this.scene_buffer.subarray(temp_scene_cursor + scene_size, this.scene_cursor), temp_scene_cursor);
+        this.projected_buffer.set(this.projected_buffer.subarray(temp_proj_cursor + proj_size, this.projected_cursor), temp_proj_cursor);
+        this.color_buffer.set(this.color_buffer.subarray(temp_color_cursor + color_size, this.color_cursor), temp_color_cursor);
+        this.raster_color.set(this.raster_color.subarray(temp_raster_color_cursor + raster_color_size, this.raster_color_cursor), temp_raster_color_cursor);
+
+        this.scene_cursor -= scene_size;
+        this.projected_cursor -= proj_size;
+        this.color_cursor -= color_size;
+        this.raster_color_cursor -= raster_color_size;
+
+        this.meshes.splice(index, 1);
+
+        for (let i = index; i < this.meshes.length; i++) {
+            const m = this.meshes[i];
+            const m_scene_size = m.indices.length * 4;
+            const m_proj_size = (m.vertices.length / 3) * 4;
+            const m_color_size = m.vertices.length;
+            const m_raster_color_size = m.indices.length * 3;
+
+            const new_scene_view = this.scene_buffer.subarray(temp_scene_cursor, temp_scene_cursor + m_scene_size);
+            const new_proj_view = this.projected_buffer.subarray(temp_proj_cursor, temp_proj_cursor + m_proj_size);
+            const new_color_view = this.color_buffer.subarray(temp_color_cursor, temp_color_cursor + m_color_size);
+            const new_raster_color_view = this.raster_color.subarray(temp_raster_color_cursor, temp_raster_color_cursor + m_raster_color_size);
+
+            m.rebind_buffers(new_raster_color_view, new_scene_view, new_proj_view, new_color_view);
+
+            temp_scene_cursor += m_scene_size;
+            temp_proj_cursor += m_proj_size;
+            temp_color_cursor += m_color_size;
+            temp_raster_color_cursor += m_raster_color_size;
+        }
+    }
+    remove_light(light: Light) {
+        const index = this.lights.indexOf(light);
+        if (index > -1) {
+            this.lights.splice(index, 1);
+        }
+    }
+
+
+
 
 }

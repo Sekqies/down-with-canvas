@@ -8,7 +8,7 @@ export class Inspector {
     private move_speed = 0.5;
     private scale_factor = 0.1;
 
-    constructor(container_id: string) {
+    constructor(container_id: string, private on_delete: (node:Node) => void) {
         const el = document.getElementById(container_id);
         if (!el) throw new Error(`Inspector container not found.`);
         this.container = el;
@@ -108,11 +108,7 @@ export class Inspector {
         btn_del.appendChild(b_del);
         
         btn_del.onclick = () => {
-            node.scale_vec[0] = 0;
-            node.scale_vec[1] = 0;
-            node.scale_vec[2] = 0;
-            node.update_matrix();
-            this.inspect(node);
+            this.on_delete(node);
         };
         
         td_del.appendChild(btn_del);
@@ -200,6 +196,9 @@ export class Inspector {
                 table.appendChild(tr);
             });
         }
+        btn_del.onclick = () => {
+            this.on_delete(node);
+        };
     }
 
     private clear() {

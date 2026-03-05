@@ -69,7 +69,7 @@ export class SceneManager {
         this.string_buffer = new StringBuffer(this.current_capacity * 60);
         
         this.viewport = new Viewport(svg_container_id);
-        this.inspector = new Inspector(inspector_id);
+        this.inspector = new Inspector(inspector_id,(node:Node) => {this.delete_node(node)});
         this.editor_state = new EditorState(this.inspector, this.scene);
 
         this.setup_lights();
@@ -187,6 +187,26 @@ export class SceneManager {
         this.current_capacity = new_capacity;
     }
 
+    public delete_node(target: Node) {
+        const node_idx = this.nodes.indexOf(target);
+        if (node_idx > -1) this.nodes.splice(node_idx, 1);
+
+        if (target.mesh) {
+            this.scene.remove_mesh(target.mesh);
+            this.current_triangles -= target.mesh.indices.length / 3;
+        }
+
+        if (target.light) {
+            this.scene.remove_light(target.light);
+        }
+
+        if (this.selected_node === target) {
+            this.select_node(null);
+        }
+
+        this.update_stats_ui();
+    }
+
     private update_stats_ui() {
         if (!this.stats_element) return;
         
@@ -199,10 +219,11 @@ export class SceneManager {
         }
     }
 
-    public select_node(node: Node) {
+    public select_node(node: Node | null) {
         this.selected_node = node;
         this.editor_state.select(this.selected_node);
     }
+    
 
     public handle_playback(action: "play" | "pause" | "stop") {
         if (action === "play") {

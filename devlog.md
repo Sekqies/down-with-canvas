@@ -1,19 +1,16 @@
-The bottom line is that we've got a finished UI! Lots of work were made, so I'll keep my explanations short.
+We are done!
 
-First, I wanted to add a way to allow an user to select a mesh and move it around with gizmos (the little colored arrows you see when you move an object around in, for instance, blender or gmod). To do this, we need a way for our scene to know where each object is. 
-To do this, we normalize the coordinates of the user's map on the screen, turn it into a point in our 3D space, get another point very, very far back from the screen (your eyes!) and draw a line from these two points. We shift it into our camera's coordinates system, then, we see if it intersects something.
-Rather than doing this vertex for vertex, we find an ellipsoid (a 3D ellipsis, or a squashed circle) and use it do bound our object, and use this ellipsoid to check for the intersection. This makes it so a mesh with 20k+ triangles will have instantenous collision checking!
+All of the last additions that I felt like were needed to ship this project are already made. Most of which where UI overhauls and quality of life changes, but there is a new change that deserves to be mentioned!
 
-All our other changes are essentially modifications to `Node` and tracking of different attributes one of these might have, like attaching a light, an animation, etc. Everything being a node made developing the UI far easier than I expected, and far, far less of a headache as I antecipated.
+I noticed in some of my displays that a light that was supposedly covered by another object still casted lights in other meshes. I initially found that weird, but it makes sense: we never did any check for collision!
+The change I immediately thought of was shadow mappings. Basically, you "render" the scene under the light's "perspective", and when applying shading to vertices, you check if there is any other object close it (in a pre-computed buffer). This seemed like the obvious high performance decision, but once again my plans were foiled by the absence of a pixel rasterizer. Implementing shadow mappings mean rasterizing my entire (svg) scene into 2D, and holding data the size of the screen, which is, surprisingly, worse than doing per-vertex analysis.
 
-Attached, the culmination of everything we've done so far!
+So, I had to implement raycasting. This is obviously expensive, but I thought of some optimizations tricks to make things faster (mainly seeing if the ray intersects with the mesh's bounding box before doing the per triangle calculations it usually does). It is still slow, but it is what it is.
+I also deployed the project and changed the UI to be full screen, wrote some documentation, and got the readme up. This joke project turned out to be far bigger than I expected, so let's treat it with some respect!
 
+Attached, our new UI, and shading!
 
 **Commits**
-[c7d57d2](https://url.jam06452.uk/wqqfue): Added animations
-[1d1e3bf](https://url.jam06452.uk/1onw8j7): Added point lights
-[694c72d](https://url.jam06452.uk/xxy088): Added object importing and modularized Inspector
-[bfe7ba1](https://url.jam06452.uk/88e4o0): Finished gizmos implementation
-[1664107](https://url.jam06452.uk/13rtpp0): Gizmos working with absolute coordinates
-[b18f978](https://url.jam06452.uk/wtguwn): Gizmos and state machine
-[b617e9e](https://url.jam06452.uk/1mjzrnf): Added ellipsoid bounding box for Nodes 
+[cf98b24](https://url.jam06452.uk/1rmlvi6): Added raytracing and shading
+[86497b4](https://url.jam06452.uk/9r1fwl): UI Overhaul
+[a8ae8b4](https://url.jam06452.uk/1e76s47): Add readme
