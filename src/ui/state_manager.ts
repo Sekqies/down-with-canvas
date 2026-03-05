@@ -31,14 +31,14 @@ export class EditorState {
     private setup_gizmos(scene: Scene) {
         const arrow_geo = create_arrow(); 
         
-        const mesh_z = scene.add_mesh(arrow_geo, vec3(0, 0, 1), 0);
+        const mesh_z = scene.add_mesh(arrow_geo, vec3(0, 0, 1), true, 0);
         this.gizmo_z = new Node(mesh_z);
         
-        const mesh_x = scene.add_mesh(arrow_geo, vec3(1, 0, 0), 0);
+        const mesh_x = scene.add_mesh(arrow_geo, vec3(1, 0, 0), true, 0);
         this.gizmo_x = new Node(mesh_x);
         this.gizmo_x.rotation[1] = Math.PI / 2; 
         
-        const mesh_y = scene.add_mesh(arrow_geo, vec3(0, 1, 0), 0);
+        const mesh_y = scene.add_mesh(arrow_geo, vec3(0, 1, 0), true, 0);
         this.gizmo_y = new Node(mesh_y);
         this.gizmo_y.rotation[0] = -Math.PI / 2;
 

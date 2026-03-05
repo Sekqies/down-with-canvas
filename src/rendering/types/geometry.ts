@@ -1,10 +1,14 @@
-import { ArrayType, IndexingType } from "../../math/types";
+import { ArrayType, IndexingType, vec3 } from "../../math/types";
 
 
 export class Geometry{
     vertices:ArrayType;
     indices:IndexingType;
     normals:ArrayType;
+
+    radius:vec3 = vec3(1,1,1);
+    radius_reciprocal:vec3 = vec3(1,1,1);
+
     constructor(vertices:ArrayType, indices:IndexingType, normals:ArrayType | null = null){
         this.vertices = vertices;
         this.indices = indices; 
@@ -14,6 +18,7 @@ export class Geometry{
             this.normals = new ArrayType(this.vertices.length);
             this.compute_normals();
         }
+        this.determine_radius();
     }
     private compute_normals() {
         const inds = this.indices;
@@ -48,6 +53,21 @@ export class Geometry{
             if (len > 0.0001) {
                 norms[i] /= len; norms[i+1] /= len; norms[i+2] /= len;
             }
+        }
+    }
+
+    private determine_radius(){
+        const EPSILON = 0.0001;
+        const biggest:vec3 = vec3(EPSILON,EPSILON,EPSILON);
+        const vertices = this.vertices;
+        for(let i = 0 ; i < vertices.length; i+=3){
+            for(let j = 0; j < 3; j++){
+                biggest[j] = Math.max(biggest[j],Math.abs(vertices[i+j]));
+            }
+        }
+        this.radius = biggest;
+        for(let j = 0; j < 3; ++j){
+            this.radius_reciprocal[j] = 1/(this.radius[j] ** 2);
         }
     }
 }

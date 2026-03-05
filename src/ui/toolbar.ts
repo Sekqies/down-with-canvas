@@ -106,7 +106,7 @@ export function initialize_toolbar(
     toolbar_container_id: string,
     options_container_id: string,
     on_create_geometry: (geo: Geometry, color: number[]) => void,
-    on_create_light: (intensity: number, radius: number, color: number[]) => void,
+    on_create_light: (intensity: number, radius: number, color: number[], casts_shadow:boolean) => void,
     on_playback_action: (action: "play" | "pause" | "stop") => void,
     on_add_animation: (type: string, params: number[]) => void
 ): void {
@@ -276,21 +276,46 @@ export function initialize_toolbar(
 
         const color_picker = append_color_picker(options_el, "#ffffff");
 
+        const label_shadow = document.createElement("label");
+        const font_shadow = document.createElement("font");
+        font_shadow.setAttribute("face", "Arial");
+        font_shadow.innerText = "Cast Shadows: ";
+        label_shadow.appendChild(font_shadow);
+
+        const input_shadow = document.createElement("input");
+        input_shadow.type = "checkbox";
+        input_shadow.checked = false;
+
+        const warning_shadow = document.createElement("font");
+        warning_shadow.setAttribute("color", "red");
+        warning_shadow.setAttribute("size", "2");
+        warning_shadow.setAttribute("face", "Arial");
+        const b_warning = document.createElement("b");
+        b_warning.innerText = " WARNING: Enabling this forces real-time raytracing. It WILL drastically tank your performance.";
+        warning_shadow.appendChild(b_warning);
+
         const create_btn = document.createElement("button");
         const create_b = document.createElement("b");
         create_b.innerText = "Add to Scene";
+        options_el.appendChild(label_shadow);
+        options_el.appendChild(input_shadow);
+        options_el.appendChild(document.createElement("br"));
+        options_el.appendChild(warning_shadow);
+        options_el.appendChild(document.createElement("br"));
+        options_el.appendChild(document.createElement("br"));
         create_btn.appendChild(create_b);
 
         create_btn.addEventListener("click", () => {
             const intensity = parseFloat(input_int.value);
             const radius = parseFloat(input_rad.value);
+            const casts_shadow = input_shadow.checked;
             
             const hex = color_picker.value;
             const r = parseInt(hex.substring(1, 3), 16) / 255.0;
             const g = parseInt(hex.substring(3, 5), 16) / 255.0;
             const b = parseInt(hex.substring(5, 7), 16) / 255.0;
             
-            on_create_light(intensity, radius, [r, g, b]);
+            on_create_light(intensity, radius, [r, g, b], casts_shadow);
         });
 
         options_el.appendChild(create_btn);

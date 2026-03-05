@@ -13,6 +13,12 @@ export class Mesh{
     raster_color: ArrayType;
     normals: ArrayType;
     albedo: vec3;
+
+    transparent:boolean = false;
+
+    radius:vec3;
+    radius_reciprocal:vec3;
+
     specular_coefficient: number;
     raster_end:number;
     visible_triangles_count:number;
@@ -24,6 +30,10 @@ export class Mesh{
         this.local_normals = geometry.normals;
         this.specular_coefficient = specular_coefficient;
         this.normals = new ArrayType(geometry.indices.length*3);
+
+        this.radius = geometry.radius;
+        this.radius_reciprocal = geometry.radius_reciprocal;
+
         if(projected_buffer === null)
             this.projected_buffer = new ArrayType(this.vertices.length * 4 / 3);
         else

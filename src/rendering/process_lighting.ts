@@ -1,11 +1,12 @@
+import { ray_intersects_ellipsoid, ray_intersects_triangles } from "../math/intersection";
 import { dot_vec3, length_vec3, mul_mat4_vec4, mul_mat4_vec4_mut, sub_vec3 } from "../math/matrix_operators";
-import { ArrayType, mat4, vec3, vec4 } from "../math/types";
+import { ArrayType, mat4, vec3, vec4, type Line } from "../math/types";
 import type { Light } from "./types/light";
 import type { Mesh } from "./types/mesh";
 import type { Scene } from "./types/scene";
 
 
-export function process_lighting(mesh:Mesh, scene:Scene, camera_coords:vec3 | null = null){
+export function process_lighting(mesh:Mesh, scene:Scene, inverse_models:mat4[], camera_coords:vec3 | null = null){
     const world_coordinates = mesh.projected_buffer;
     const lights = scene.lights;
     let vertex:vec3 = vec3(0,0,0);
@@ -26,14 +27,43 @@ export function process_lighting(mesh:Mesh, scene:Scene, camera_coords:vec3 | nu
 
         let color = vec3(0,0,0);
         for(const light of lights){
+            let in_shadow:boolean = false;
             const L = sub_vec3(light.position,vertex);
             const dist = length_vec3(L) || k;
-            L[0]/=dist;
-            L[1]/=dist;
-            L[2]/=dist;
             if (dist > light.radius){
                 continue;
             }
+            
+
+            if(light.casts_shadow){
+                const ray:Line = {
+                    point:vertex,
+                    directional_vector: L
+                };
+                for(let j = 0; j < scene.meshes.length; ++j){
+                    const target_mesh = scene.meshes[j];
+                    if(target_mesh.transparent){
+                        continue;
+                    }
+                    const target_inverse = inverse_models[j];
+
+                    if(ray_intersects_ellipsoid(ray,target_inverse,target_mesh.radius_reciprocal)){
+                        if(ray_intersects_triangles(ray,target_mesh,target_inverse)){
+                            in_shadow = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if(in_shadow){
+                continue;
+            }
+
+            L[0]/=dist;
+            L[1]/=dist;
+            L[2]/=dist;
+
             const dot = L[0] * nx + L[1] * ny + L[2] * nz;  
             const diffuse = Math.max(0,dot);
             const window = 1//*Math.pow(Math.max(0, 1 - Math.pow(dist / light.radius, 4)), 2)
@@ -80,7 +110,7 @@ export function process_lighting(mesh:Mesh, scene:Scene, camera_coords:vec3 | nu
  * @param camera_coord The coordinate of the Camera (pass this if you want a functioning reflection model)
  */
 
-export function process_world_coordinates(scene:Scene, model:mat4[], camera_coord:vec3 | null = null){
+export function process_world_coordinates(scene:Scene, model:mat4[], inverse_model:mat4[], camera_coord:vec3 | null = null){
     let v:vec4 = vec4(0,0,0,0);
     let mesh_index = 0;
     for(const mesh of scene.meshes){
@@ -98,6 +128,6 @@ export function process_world_coordinates(scene:Scene, model:mat4[], camera_coor
             mesh.projected_buffer[out_index++] = v[2];
             mesh.projected_buffer[out_index++] = v[3];
         }
-        process_lighting(mesh,scene,camera_coord);
+        process_lighting(mesh,scene, inverse_model, camera_coord);
     }
 }

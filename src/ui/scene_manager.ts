@@ -82,8 +82,8 @@ export class SceneManager {
             (geo: Geometry, color: number[]) => {
                 this.add_node(geo, color);
             }, 
-            (intensity: number, radius: number, color: number[]) => {
-                this.add_point_light(intensity, radius, color);
+            (intensity: number, radius: number, color: number[], casts_shadow:boolean) => {
+                this.add_point_light(intensity, radius, color,casts_shadow);
             },
             (action: "play" | "pause" | "stop") => {
                 this.handle_playback(action);
@@ -107,7 +107,7 @@ export class SceneManager {
 
     private setup_lights() {
         const sun_light = new Light(vec3(10, 10, 10), vec3(1.0, 0.95, 0.9), 3.0, 200.0);
-        const leskow_light = new Light(vec3(5, 0, 0), vec3(0.8, 0.2, 0.0), 2.0, 100.0);
+        const leskow_light = new Light(vec3(5, 0, 0), vec3(0.8, 0.2, 0.0), 0.0, 100.0);
         this.scene.add_light(sun_light);
         this.scene.add_light(leskow_light);
     }
@@ -124,7 +124,7 @@ export class SceneManager {
             this.expand_capacity(this.current_triangles + new_triangles);
         }
 
-        const mesh = this.scene.add_mesh(geo, vec3(color_arr[0], color_arr[1], color_arr[2]), 0.5); 
+        const mesh = this.scene.add_mesh(geo, vec3(color_arr[0], color_arr[1], color_arr[2]), false, 0.5); 
         
         const node = new Node(mesh);
         this.nodes.push(node);
@@ -135,14 +135,14 @@ export class SceneManager {
         this.select_node(node);
     }
 
-    public add_point_light(intensity: number, radius: number, color_arr: number[] = [1.0, 1.0, 1.0]) {
+    public add_point_light(intensity: number, radius: number, color_arr: number[] = [1.0, 1.0, 1.0], casts_shadow:boolean) {
         const light_color = vec3(color_arr[0], color_arr[1], color_arr[2]);
-        const new_light = new Light(vec3(0, 0, 0), light_color, intensity, radius);
+        const new_light = new Light(vec3(0, 0, 0), light_color, intensity, radius,casts_shadow);
         this.scene.add_light(new_light);
 
         const bulb_geo = primitives.create_sphere(0.2, 8, 8); 
         
-        const mesh = this.scene.add_mesh(bulb_geo, light_color, 0.5);
+        const mesh = this.scene.add_mesh(bulb_geo, light_color, true, 0.5);
 
         const light_node = new Node(mesh, new_light);
         
@@ -254,19 +254,20 @@ export class SceneManager {
 
         const all_nodes = [
            this.editor_state.gizmo_z,
+            this.editor_state.gizmo_x,
            this.editor_state.gizmo_y,
-           this.editor_state.gizmo_x,
             ...this.nodes
         ]
 
         const models = all_nodes.map(n => n.model);
+        const inverse_models = all_nodes.map(n => n.inverse_model);
         const mvps = models.map(m => mul_mat4(vp, m));
 
         for (let i = 0; i < this.scene.meshes.length; ++i) {
             this.scene.meshes[i].update_normals(models[i]);
         }
 
-        process_world_coordinates(this.scene, models, camera_pos);
+        process_world_coordinates(this.scene, models,inverse_models, camera_pos);
 
         const do_wireframe = this.wireframe_checkbox?.checked || false;
         render_scene(this.scene, mvps, true);
